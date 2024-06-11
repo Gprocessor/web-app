@@ -1,52 +1,41 @@
-/** Angular Imports */
 import { Component, OnInit } from '@angular/core';
-import { UntypedFormGroup, UntypedFormBuilder, Validators, UntypedFormControl } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
-
-/** Custom Services */
-import { SavingsService } from '../../savings.service';
+import { UntypedFormBuilder, UntypedFormControl, UntypedFormGroup, Validators } from '@angular/forms';
+import { FixedDepositsService } from '../../fixed-deposits.service';
 import { SettingsService } from 'app/settings/settings.service';
 import { Dates } from 'app/core/utils/dates';
-import { Currency } from 'app/shared/models/general.model';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Currency, PaymentType } from 'app/shared/models/general.model';
 
-/**
- * Create savings account transactions component.
- */
 @Component({
-  selector: 'mifosx-savings-transactions',
-  templateUrl: './savings-account-transactions.component.html',
-  styleUrls: ['./savings-account-transactions.component.scss']
+  selector: 'mifosx-fixed-deposits-cash-transaction',
+  templateUrl: './fixed-deposits-cash-transaction.component.html',
+  styleUrls: ['./fixed-deposits-cash-transaction.component.scss']
 })
-export class SavingsAccountTransactionsComponent implements OnInit {
+export class FixedDepositsCashTransactionComponent implements OnInit {
 
   /** Minimum Due Date allowed. */
   minDate = new Date(2000, 0, 1);
   /** Maximum Due Date allowed. */
   maxDate = new Date();
   /** Savings account transaction form. */
-  savingAccountTransactionForm: UntypedFormGroup;
+  accountTransactionForm: UntypedFormGroup;
   /** savings account transaction payment options. */
-  paymentTypeOptions: {
-    id: number,
-    name: string,
-    description: string,
-    isCashPayment: boolean,
-    position: number
-  }[];
+  paymentTypeOptions: PaymentType[] = [];
   /** Flag to enable payment details fields. */
   addPaymentDetailsFlag: Boolean = false;
   /** transaction type flag to render required UI */
   transactionType: { deposit: boolean, withdrawal: boolean } = { deposit: false, withdrawal: false };
   /** transaction command for submit request */
   transactionCommand: string;
+  actionName: string;
   /** saving account's Id */
-  savingAccountId: string;
-  currency: Currency | null = null;
+  accountId: string;
+  currency: Currency;
 
   /**
    * Retrieves the Saving Account transaction template data from `resolve`.
    * @param {FormBuilder} formBuilder Form Builder.
-   * @param {SavingsService} savingsService Savings Service.
+   * @param {FixedDepositsService} fixedDepositsService Fixed Deposit Service.
    * @param {ActivatedRoute} route Activated Route.
    * @param {Dates} dateUtils Date Utils.
    * @param {Router} router Router for navigation.
@@ -56,17 +45,16 @@ export class SavingsAccountTransactionsComponent implements OnInit {
               private route: ActivatedRoute,
               private router: Router,
               private dateUtils: Dates,
-              private savingsService: SavingsService,
+              private fixedDepositsService: FixedDepositsService,
               private settingsService: SettingsService) {
-    this.route.data.subscribe((data: { savingsAccountActionData: any }) => {
-      this.paymentTypeOptions = data.savingsAccountActionData.paymentTypeOptions;
-      if (data.savingsAccountActionData.currency) {
-        this.currency = data.savingsAccountActionData.currency;
-      }
+    this.route.data.subscribe((data: { fixedDepositsAccountActionData: any }) => {
+      this.currency = data.fixedDepositsAccountActionData.currency;
+      this.paymentTypeOptions = data.fixedDepositsAccountActionData.paymentTypeOptions;
     });
-    this.transactionCommand = this.route.snapshot.params['name'].toLowerCase();
+    this.actionName = this.route.snapshot.params['name'];
+    this.transactionCommand = this.actionName.toLowerCase();
     this.transactionType[this.transactionCommand] = true;
-    this.savingAccountId = this.route.snapshot.params['savingAccountId'];
+    this.accountId = this.route.parent.snapshot.params['fixedDepositAccountId'];
   }
 
   /**
@@ -81,7 +69,7 @@ export class SavingsAccountTransactionsComponent implements OnInit {
    * Method to create the Saving Account Transaction Form.
    */
   createSavingAccountTransactionForm() {
-    this.savingAccountTransactionForm = this.formBuilder.group({
+    this.accountTransactionForm = this.formBuilder.group({
       'transactionDate': [this.settingsService.businessDate, Validators.required],
       'transactionAmount': [0, Validators.required],
       'paymentTypeId': [''],
@@ -95,17 +83,17 @@ export class SavingsAccountTransactionsComponent implements OnInit {
   addPaymentDetails() {
     this.addPaymentDetailsFlag = !this.addPaymentDetailsFlag;
     if (this.addPaymentDetailsFlag) {
-      this.savingAccountTransactionForm.addControl('accountNumber', new UntypedFormControl(''));
-      this.savingAccountTransactionForm.addControl('checkNumber', new UntypedFormControl(''));
-      this.savingAccountTransactionForm.addControl('routingCode', new UntypedFormControl(''));
-      this.savingAccountTransactionForm.addControl('receiptNumber', new UntypedFormControl(''));
-      this.savingAccountTransactionForm.addControl('bankNumber', new UntypedFormControl(''));
+      this.accountTransactionForm.addControl('accountNumber', new UntypedFormControl(''));
+      this.accountTransactionForm.addControl('checkNumber', new UntypedFormControl(''));
+      this.accountTransactionForm.addControl('routingCode', new UntypedFormControl(''));
+      this.accountTransactionForm.addControl('receiptNumber', new UntypedFormControl(''));
+      this.accountTransactionForm.addControl('bankNumber', new UntypedFormControl(''));
     } else {
-      this.savingAccountTransactionForm.removeControl('accountNumber');
-      this.savingAccountTransactionForm.removeControl('checkNumber');
-      this.savingAccountTransactionForm.removeControl('routingCode');
-      this.savingAccountTransactionForm.removeControl('receiptNumber');
-      this.savingAccountTransactionForm.removeControl('bankNumber');
+      this.accountTransactionForm.removeControl('accountNumber');
+      this.accountTransactionForm.removeControl('checkNumber');
+      this.accountTransactionForm.removeControl('routingCode');
+      this.accountTransactionForm.removeControl('receiptNumber');
+      this.accountTransactionForm.removeControl('bankNumber');
     }
   }
 
@@ -113,10 +101,10 @@ export class SavingsAccountTransactionsComponent implements OnInit {
    * Method to submit the transaction details.
    */
   submit() {
-    const savingAccountTransactionFormData = this.savingAccountTransactionForm.value;
+    const savingAccountTransactionFormData = this.accountTransactionForm.value;
     const locale = this.settingsService.language.code;
     const dateFormat = this.settingsService.dateFormat;
-    const prevTransactionDate: Date = this.savingAccountTransactionForm.value.transactionDate;
+    const prevTransactionDate: Date = this.accountTransactionForm.value.transactionDate;
     if (savingAccountTransactionFormData.transactionDate instanceof Date) {
       savingAccountTransactionFormData.transactionDate = this.dateUtils.formatDate(prevTransactionDate, dateFormat);
     }
@@ -125,9 +113,11 @@ export class SavingsAccountTransactionsComponent implements OnInit {
       dateFormat,
       locale
     };
+    delete data.note;
     data['transactionAmount'] = data['transactionAmount'] * 1;
-    this.savingsService.executeSavingsAccountTransactionsCommand(this.savingAccountId, this.transactionCommand, data).subscribe(res => {
+    this.fixedDepositsService.executeFixedDepositsAccountTransactionsCommand(this.accountId, this.transactionCommand, data).subscribe(res => {
       this.router.navigate(['../../transactions'], { relativeTo: this.route });
     });
   }
+
 }
