@@ -231,6 +231,7 @@ export class LoansAccountChargesStepComponent implements OnInit, OnChanges {
         label: 'Amount',
         value: this.isPercentageCharge(charge) ? charge.amountOrPercentage : charge.amount,
         type: 'number',
+        step: 'any',
         required: false
       })
     ];

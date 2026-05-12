@@ -800,6 +800,7 @@ export class LoansAccountTermsStepComponent extends LoanProductBaseComponent imp
         label: `Principal(It should be less than equal to the ${currentPrincipalAmount})`,
         value: '',
         type: 'number',
+        step: 'any',
         required: true,
         order: 2
       })
