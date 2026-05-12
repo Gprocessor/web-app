@@ -82,6 +82,8 @@ import { LoanDelinquencyRangeScheduleResolver } from './common-resolvers/working
 import { LoanAmortizationScheduleTabComponent } from './loans-view/working-capital/loan-amortization-schedule-tab/loan-amortization-schedule-tab.component';
 import { LoanAmortizationScheduleResolver } from './common-resolvers/working-capital/loan-amortization-schedule.resolver';
 import { LoanBalancesTabComponent } from './loans-view/working-capital/loan-balances-tab/loan-balances-tab.component';
+import { LoanPeriodPaymentRatesComponent } from './loans-view/working-capital/loan-period-payment-rates/loan-period-payment-rates.component';
+import { LoanPeriodPaymentRatesResolver } from './loans-view/working-capital/common-resolvers/loan-period-payment-rates.resolver';
 
 /** Loans Route. */
 const routes: Routes = [
@@ -165,6 +167,14 @@ const routes: Routes = [
                 component: ExportTransactionsComponent
               }
             ]
+          },
+          {
+            path: 'payment-rates',
+            component: LoanPeriodPaymentRatesComponent,
+            data: { title: 'Period Payment Rates', breadcrumb: 'Period Payment Rates', routeParamBreadcrumb: false },
+            resolve: {
+              loanPaymentRatesData: LoanPeriodPaymentRatesResolver
+            }
           },
           {
             path: 'deferred-income',
@@ -466,7 +476,8 @@ const routes: Routes = [
     LoanDeferredIncomeDataResolver,
     LoanBuyDownFeesDataResolver,
     LoanProductsResolver,
-    LoanAmortizationScheduleResolver
+    LoanAmortizationScheduleResolver,
+    LoanPeriodPaymentRatesResolver
   ]
 })
 export class LoansRoutingModule {}

@@ -845,4 +845,25 @@ export class LoansService {
     const httpParams = new HttpParams().set('offset', offset.toString()).set('limit', limit.toString());
     return this.http.get('/entityDatatableChecks', { params: httpParams });
   }
+
+  /**
+   * Returns the Working Capital Loan Payment Rates data
+   */
+  getWorkingCapitalPeriodPaymentRates(loanId: any) {
+    return this.http.get(`/working-capital-loans/${loanId}/rate-changes`);
+  }
+
+  /**
+   * Add a Working Capital Loan Payment Rates
+   */
+  addWorkingCapitalPeriodPaymentRate(loanId: any, payload: any) {
+    return this.http.put(`/working-capital-loans/${loanId}/rate`, payload);
+  }
+
+  /**
+   * Undo a Working Capital Loan Payment Rates
+   */
+  undoWorkingCapitalPeriodPaymentRate(loanId: any, payload: any) {
+    return this.http.post(`/working-capital-loans/${loanId}/rate/undo`, payload);
+  }
 }

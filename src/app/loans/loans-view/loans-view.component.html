@@ -390,10 +390,24 @@
               productType: loanProductService.productType.value
             }"
             routerLinkActive
-            #dashboard="routerLinkActive"
-            [active]="dashboard.isActive"
+            #transactions="routerLinkActive"
+            [active]="transactions.isActive"
           >
             {{ 'labels.inputs.Transactions' | translate }}
+          </a>
+        }
+        @if (loanProductService.isWorkingCapital && loanDetailsData.status.active) {
+          <a
+            mat-tab-link
+            [routerLink]="['./payment-rates']"
+            [queryParams]="{
+              productType: loanProductService.productType.value
+            }"
+            routerLinkActive
+            #paymentRates="routerLinkActive"
+            [active]="paymentRates.isActive"
+          >
+            {{ 'labels.inputs.Period Payment Rates' | translate }}
           </a>
         }
         @if (loanProductService.isLoanProduct && loanDetailsData.enableIncomeCapitalization) {
