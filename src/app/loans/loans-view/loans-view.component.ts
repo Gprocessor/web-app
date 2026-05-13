@@ -470,6 +470,9 @@ export class LoansViewComponent extends LoanProductBaseComponent implements OnIn
       }
     });
     recoverFromGuarantorDialogRef.afterClosed().subscribe((response: any) => {
+      if (!response) {
+        return;
+      }
       if (response.confirm) {
         this.loansService.loanActionButtons(this.loanId, 'recoverGuarantees').subscribe(() => {
           this.reload();
@@ -501,6 +504,9 @@ export class LoansViewComponent extends LoanProductBaseComponent implements OnIn
       }
     });
     undoTransactionAccountDialogRef.afterClosed().subscribe((response: any) => {
+      if (!response) {
+        return;
+      }
       if (response.confirm) {
         let undoCommand: string = '';
         switch (actionName) {
@@ -577,6 +583,9 @@ export class LoansViewComponent extends LoanProductBaseComponent implements OnIn
       data: { deleteContext: `with loan id: ${this.loanId}` }
     });
     deleteGuarantorDialogRef.afterClosed().subscribe((response: any) => {
+      if (!response) {
+        return;
+      }
       if (response.delete) {
         this.loansService.deleteLoanAccount(this.loanId).subscribe(() => {
           this.router.navigate(['../../'], { relativeTo: this.route });
