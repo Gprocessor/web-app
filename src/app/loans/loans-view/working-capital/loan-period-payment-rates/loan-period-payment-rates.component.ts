@@ -110,8 +110,7 @@ export class LoanPeriodPaymentRatesComponent implements OnInit {
         const payload = {
           periodPaymentRate: periodPaymentRate,
           note: note || '',
-          locale: this.settingsService.language.code,
-          dateFormat: this.settingsService.dateFormat
+          locale: this.settingsService.language.code
         };
         this.loanService.addWorkingCapitalPeriodPaymentRate(this.loanId, payload).subscribe((response: any) => {
           this.loanService.getWorkingCapitalPeriodPaymentRates(this.loanId).subscribe((data: any) => {
