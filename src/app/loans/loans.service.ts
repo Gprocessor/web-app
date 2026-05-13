@@ -857,13 +857,6 @@ export class LoansService {
    * Add a Working Capital Loan Payment Rates
    */
   addWorkingCapitalPeriodPaymentRate(loanId: any, payload: any) {
-    return this.http.put(`/working-capital-loans/${loanId}/rate`, payload);
-  }
-
-  /**
-   * Undo a Working Capital Loan Payment Rates
-   */
-  undoWorkingCapitalPeriodPaymentRate(loanId: any, payload: any) {
-    return this.http.post(`/working-capital-loans/${loanId}/rate/undo`, payload);
+    return this.http.put(`/working-capital-loans/${loanId}/payment-rate`, payload);
   }
 }
