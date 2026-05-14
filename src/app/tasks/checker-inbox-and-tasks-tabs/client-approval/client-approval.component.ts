@@ -45,7 +45,6 @@ import { DatepickerBase } from 'app/shared/form-dialog/formfield/model/datepicke
 import { TasksService } from '../../tasks.service';
 import { SettingsService } from 'app/settings/settings.service';
 import { Dates } from 'app/core/utils/dates';
-import { KeyValuePipe } from '@angular/common';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { AccountsFilterPipe } from '../../../pipes/accounts-filter.pipe';
@@ -69,9 +68,7 @@ import { STANDALONE_SHARED_IMPORTS } from 'app/standalone-shared.module';
     MatHeaderRow,
     MatRowDef,
     MatRow,
-    MatPaginator,
-    KeyValuePipe,
-    AccountsFilterPipe
+    MatPaginator
   ],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
