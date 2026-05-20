@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import {
   MatDialogRef,
   MAT_DIALOG_DATA,
@@ -30,7 +30,7 @@ import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
     MatDialogClose
   ]
 })
-export class UndoDialogComponent {
+export class UndoDialogComponent implements OnInit {
   dialogRef = inject<MatDialogRef<UndoDialogComponent>>(MatDialogRef);
   data = inject(MAT_DIALOG_DATA);
   private formBuilder = inject(UntypedFormBuilder);
