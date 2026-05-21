@@ -64,7 +64,7 @@ export class TransactionsTabComponent implements OnInit {
     'totalShares',
     'purchasedOrRedeemedPrice',
     'chargeAmount',
-    'amountRecievedOrReturned'
+    'amountReceivedOrReturned'
   ];
 
   /**
