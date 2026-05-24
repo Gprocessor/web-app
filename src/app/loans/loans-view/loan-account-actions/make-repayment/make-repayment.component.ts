@@ -7,7 +7,7 @@
  */
 
 /** Angular Imports */
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { UntypedFormGroup, UntypedFormBuilder, Validators, UntypedFormControl } from '@angular/forms';
 
 /** Custom Services */
@@ -43,6 +43,7 @@ export class MakeRepaymentComponent extends LoanAccountActionsBaseComponent impl
   private formBuilder = inject(UntypedFormBuilder);
   private dateUtils = inject(Dates);
   private penaltyManagementService = inject(PenaltyManagementService);
+  private cdr = inject(ChangeDetectorRef);
 
   /** Payment Type Options */
   paymentTypes: any;
@@ -50,6 +51,8 @@ export class MakeRepaymentComponent extends LoanAccountActionsBaseComponent impl
   showPaymentDetails = false;
   /** Waive Penalties toggle */
   waivePenalties = false;
+  /** Prevents duplicate submissions */
+  isSubmitting = false;
   /** Penalties list */
   penalties: any[] = [];
   /** Selected penalty IDs */
@@ -182,7 +185,6 @@ export class MakeRepaymentComponent extends LoanAccountActionsBaseComponent impl
         this.penalties = penalties;
       },
       error: (error: any) => {
-        console.error('Error loading penalties:', error);
         this.penalties = [];
       }
     });
@@ -308,6 +310,12 @@ export class MakeRepaymentComponent extends LoanAccountActionsBaseComponent impl
 
   /** Submits the repayment form */
   submit() {
+    if (this.repaymentLoanForm.invalid || this.isSubmitting) {
+      return;
+    }
+    this.isSubmitting = true;
+    this.cdr.markForCheck();
+
     const repaymentLoanFormData = this.repaymentLoanForm.value;
     const locale = this.settingsService.language.code;
     const dateFormat = this.settingsService.dateFormat;
@@ -333,7 +341,6 @@ export class MakeRepaymentComponent extends LoanAccountActionsBaseComponent impl
           this.submitRepayment(data);
         },
         error: (error: any) => {
-          console.error('Error waiving penalties:', error);
           // Continue with repayment even if waive fails
           this.submitRepayment(data);
         }
@@ -345,8 +352,14 @@ export class MakeRepaymentComponent extends LoanAccountActionsBaseComponent impl
 
   /** Submit the repayment after penalties are waived */
   private submitRepayment(data: any) {
-    this.loanService.submitLoanActionButton(this.loanId, data, this.command).subscribe((response: any) => {
-      this.gotoLoanView('transactions');
+    this.loanService.submitLoanActionButton(this.loanId, data, this.command).subscribe({
+      next: (response: any) => {
+        this.gotoLoanView('transactions');
+      },
+      error: (error: any) => {
+        this.isSubmitting = false;
+        this.cdr.markForCheck();
+      }
     });
   }
 }

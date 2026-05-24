@@ -183,7 +183,7 @@
           <button
             mat-raised-button
             color="primary"
-            [disabled]="!repaymentLoanForm.valid"
+            [disabled]="!repaymentLoanForm.valid || isSubmitting"
             *mifosxHasPermission="'REPAYMENT_LOAN'"
           >
             {{ 'labels.buttons.Submit' | translate }}
