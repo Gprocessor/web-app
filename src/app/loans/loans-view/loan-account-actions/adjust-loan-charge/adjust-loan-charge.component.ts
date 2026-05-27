@@ -6,7 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { UntypedFormBuilder, UntypedFormControl, UntypedFormGroup, Validators } from '@angular/forms';
 import { OrganizationService } from 'app/organization/organization.service';
 import { MatSlideToggle } from '@angular/material/slide-toggle';
@@ -28,6 +29,7 @@ import { InputAmountComponent } from 'app/shared/input-amount/input-amount.compo
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AdjustLoanChargeComponent extends LoanAccountActionsBaseComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private formBuilder = inject(UntypedFormBuilder);
   private organizationService = inject(OrganizationService);
 
@@ -55,10 +57,12 @@ export class AdjustLoanChargeComponent extends LoanAccountActionsBaseComponent i
   constructor() {
     super();
     this.chargeId = this.route.snapshot.params['id'];
-    this.route.data.subscribe((data: { loansAccountCharge: any; loanDetailsData: any }) => {
-      this.chargeData = data.loansAccountCharge;
-      this.loanDetailsData = data.loanDetailsData;
-    });
+    this.route.data
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((data: { loansAccountCharge: any; loanDetailsData: any }) => {
+        this.chargeData = data.loansAccountCharge;
+        this.loanDetailsData = data.loanDetailsData;
+      });
   }
 
   /**

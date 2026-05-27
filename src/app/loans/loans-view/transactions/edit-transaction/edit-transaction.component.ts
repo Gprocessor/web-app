@@ -7,7 +7,8 @@
  */
 
 /** Angular Imports */
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { UntypedFormGroup, UntypedFormBuilder, Validators, UntypedFormControl } from '@angular/forms';
 import { Dates } from 'app/core/utils/dates';
 
@@ -34,6 +35,7 @@ import { LoanAccountActionsBaseComponent } from '../../loan-account-actions/loan
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class EditTransactionComponent extends LoanAccountActionsBaseComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private formBuilder = inject(UntypedFormBuilder);
   private dateUtils = inject(Dates);
   private loansService = inject(LoansService);
@@ -71,13 +73,15 @@ export class EditTransactionComponent extends LoanAccountActionsBaseComponent im
    */
   constructor() {
     super();
-    this.route.data.subscribe((data: { loansAccountTransactionTemplate: any }) => {
-      this.transactionTemplateData = data.loansAccountTransactionTemplate;
-      if (data.loansAccountTransactionTemplate.currency) {
-        this.currency = data.loansAccountTransactionTemplate.currency;
-      }
-      this.paymentTypeOptions = this.transactionTemplateData.paymentTypeOptions;
-    });
+    this.route.data
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((data: { loansAccountTransactionTemplate: any }) => {
+        this.transactionTemplateData = data.loansAccountTransactionTemplate;
+        if (data.loansAccountTransactionTemplate.currency) {
+          this.currency = data.loansAccountTransactionTemplate.currency;
+        }
+        this.paymentTypeOptions = this.transactionTemplateData.paymentTypeOptions;
+      });
     this.loanAccountId = this.route.snapshot.params['loanId'];
   }
 

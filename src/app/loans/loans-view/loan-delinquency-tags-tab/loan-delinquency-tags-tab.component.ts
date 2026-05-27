@@ -6,7 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatDialog } from '@angular/material/dialog';
 import { ActivatedRoute } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
@@ -74,6 +75,7 @@ import { ProductsService } from 'app/products/products.service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class LoanDelinquencyTagsTabComponent extends LoanProductBaseComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private route = inject(ActivatedRoute);
   private loansServices = inject(LoansService);
   private productsServices = inject(ProductsService);
@@ -128,28 +130,30 @@ export class LoanDelinquencyTagsTabComponent extends LoanProductBaseComponent im
     this.loanId = this.route.parent.parent.snapshot.params['loanId'];
     this.businessDate = this.settingsService.businessDate;
 
-    this.route.parent.data.subscribe(
-      (data: {
-        loanDelinquencyTagsData: LoanDelinquencyTags[];
-        loanDelinquencyData: any;
-        loanDelinquencyActions: LoanDelinquencyAction[];
-        wcLoanDelinquencyRangeSchedule: DelinquencyRangeSchedule[];
-      }) => {
-        this.loanDelinquencyTags = data.loanDelinquencyTagsData;
-        this.setLoanDelinquencyAction(data.loanDelinquencyActions || []);
-        const loanDelinquencyDataResponse = data.loanDelinquencyData ?? null;
-        const loanDelinquencyData: DelinquentData | null = loanDelinquencyDataResponse?.delinquent || null;
-        this.currency = loanDelinquencyDataResponse?.currency;
-        this.installmentLevelDelinquency = [];
-        if (loanDelinquencyData != null) {
-          this.installmentLevelDelinquency = loanDelinquencyData.installmentLevelDelinquency || [];
+    this.route.parent.data
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(
+        (data: {
+          loanDelinquencyTagsData: LoanDelinquencyTags[];
+          loanDelinquencyData: any;
+          loanDelinquencyActions: LoanDelinquencyAction[];
+          wcLoanDelinquencyRangeSchedule: DelinquencyRangeSchedule[];
+        }) => {
+          this.loanDelinquencyTags = data.loanDelinquencyTagsData;
+          this.setLoanDelinquencyAction(data.loanDelinquencyActions || []);
+          const loanDelinquencyDataResponse = data.loanDelinquencyData ?? null;
+          const loanDelinquencyData: DelinquentData | null = loanDelinquencyDataResponse?.delinquent || null;
+          this.currency = loanDelinquencyDataResponse?.currency;
+          this.installmentLevelDelinquency = [];
+          if (loanDelinquencyData != null) {
+            this.installmentLevelDelinquency = loanDelinquencyData.installmentLevelDelinquency || [];
+          }
+          if (loanDelinquencyDataResponse?.product) {
+            this.loanProductId = loanDelinquencyDataResponse.product.id;
+          }
+          this.wcLoanDelinquencyRangeSchedule = data.wcLoanDelinquencyRangeSchedule;
         }
-        if (loanDelinquencyDataResponse?.product) {
-          this.loanProductId = loanDelinquencyDataResponse.product.id;
-        }
-        this.wcLoanDelinquencyRangeSchedule = data.wcLoanDelinquencyRangeSchedule;
-      }
-    );
+      );
   }
 
   ngOnInit(): void {
