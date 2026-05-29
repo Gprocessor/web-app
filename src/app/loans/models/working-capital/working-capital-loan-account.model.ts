@@ -22,17 +22,14 @@ export interface ProjectedAmortizationSchedule {
 export interface Payment {
   paymentNo: number;
   paymentDate: Date;
-  count: number;
-  paymentsLeft: number;
   expectedPaymentAmount: number;
-  discountFactor: number;
-  npvValue: number;
-  balance: number;
-  deferredBalance: number;
-  forecastPaymentAmount?: number;
+  expectedBalance: number;
+  actualBalance?: number;
   expectedAmortizationAmount?: number;
-  netAmortizationAmount?: number;
-  incomeModification?: number;
+  actualPaymentAmount?: number;
+  actualAmortizationAmount?: number;
+  expectedDiscountFeeBalance: number;
+  actualDiscountFeeBalance?: number;
 }
 
 export interface WorkingCapitalBalances {

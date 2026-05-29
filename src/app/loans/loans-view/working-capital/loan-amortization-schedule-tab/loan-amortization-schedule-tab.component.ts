@@ -37,6 +37,7 @@ import { DateFormatPipe } from 'app/pipes/date-format.pipe';
 import { FormatNumberPipe } from 'app/pipes/format-number.pipe';
 import { SettingsService } from 'app/settings/settings.service';
 import { STANDALONE_SHARED_IMPORTS } from 'app/standalone-shared.module';
+import { TranslateService } from '@ngx-translate/core';
 import { jsPDF, jsPDFOptions } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -72,6 +73,7 @@ export class LoanAmortizationScheduleTabComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
   private settingsService = inject(SettingsService);
   private dateUtils = inject(Dates);
+  private translateService = inject(TranslateService);
 
   amortizationSchedule: ProjectedAmortizationSchedule | null = null;
   dataSource = new MatTableDataSource<Payment>();
@@ -81,33 +83,31 @@ export class LoanAmortizationScheduleTabComponent implements OnInit {
     'number',
     'paymentDate',
     'expectedPaymentAmount',
-    'discountFactor',
-    'npvValue',
-    'deferredBalance',
+    'expectedBalance',
     'expectedAmortizationAmount',
-    'balance'
+    'expectedDiscountFeeBalance'
   ];
 
   private readonly optionalColumns: { field: keyof Payment; column: string }[] = [
-    { field: 'forecastPaymentAmount', column: 'forecastPaymentAmount' },
-    { field: 'netAmortizationAmount', column: 'netAmortizationAmount' },
-    { field: 'incomeModification', column: 'incomeModification' }
+    { field: 'actualPaymentAmount', column: 'actualPaymentAmount' },
+    { field: 'actualBalance', column: 'actualBalance' },
+    { field: 'actualAmortizationAmount', column: 'actualAmortizationAmount' },
+    { field: 'actualDiscountFeeBalance', column: 'actualDiscountFeeBalance' }
   ];
 
   displayedColumns: string[] = [...this.baseColumns];
 
-  private readonly columnLabels: Record<string, string> = {
+  private readonly columnLabelKeys: Record<string, string> = {
     number: '#',
-    paymentDate: 'Payment Date',
-    expectedPaymentAmount: 'Expected Payment',
-    discountFactor: 'Discount Factor',
-    npvValue: 'NPV Value',
-    deferredBalance: 'Deferred Balance',
-    expectedAmortizationAmount: 'Exp. Amortization',
-    balance: 'Balance',
-    forecastPaymentAmount: 'Forecast Payment',
-    netAmortizationAmount: 'Net Amortization',
-    incomeModification: 'Income Modification'
+    paymentDate: 'labels.inputs.Payment Date',
+    expectedPaymentAmount: 'labels.inputs.Expected Payment Amount',
+    expectedBalance: 'labels.inputs.Expected Balance',
+    expectedAmortizationAmount: 'labels.inputs.Expected Amortization Amount',
+    expectedDiscountFeeBalance: 'labels.inputs.Expected Discount Fee Balance',
+    actualPaymentAmount: 'labels.inputs.Actual Payment',
+    actualBalance: 'labels.inputs.Actual Balance',
+    actualAmortizationAmount: 'labels.inputs.Actual Amortization',
+    actualDiscountFeeBalance: 'labels.inputs.Actual Discount Fee Balance'
   };
 
   ngOnInit(): void {
@@ -156,7 +156,7 @@ export class LoanAmortizationScheduleTabComponent implements OnInit {
     const pdf = new jsPDF(options);
 
     const columns = this.displayedColumns.map((col) => ({
-      header: this.columnLabels[col] ?? col,
+      header: this.translateService.instant(this.columnLabelKeys[col] ?? col),
       dataKey: col
     }));
 
@@ -191,22 +191,20 @@ export class LoanAmortizationScheduleTabComponent implements OnInit {
         return payment.paymentDate ? this.dateUtils.formatDate(payment.paymentDate, Dates.DEFAULT_DATEFORMAT) : '';
       case 'expectedPaymentAmount':
         return fmt(payment.expectedPaymentAmount);
-      case 'discountFactor':
-        return fmt(payment.discountFactor);
-      case 'npvValue':
-        return fmt(payment.npvValue);
-      case 'deferredBalance':
-        return fmt(payment.deferredBalance);
+      case 'expectedBalance':
+        return fmt(payment.expectedBalance);
+      case 'actualBalance':
+        return fmt(payment.actualBalance);
       case 'expectedAmortizationAmount':
         return fmt(payment.expectedAmortizationAmount);
-      case 'balance':
-        return fmt(payment.balance);
-      case 'forecastPaymentAmount':
-        return fmt(payment.forecastPaymentAmount);
-      case 'netAmortizationAmount':
-        return fmt(payment.netAmortizationAmount);
-      case 'incomeModification':
-        return fmt(payment.incomeModification);
+      case 'actualPaymentAmount':
+        return fmt(payment.actualPaymentAmount);
+      case 'actualAmortizationAmount':
+        return fmt(payment.actualAmortizationAmount);
+      case 'expectedDiscountFeeBalance':
+        return fmt(payment.expectedDiscountFeeBalance);
+      case 'actualDiscountFeeBalance':
+        return fmt(payment.actualDiscountFeeBalance);
       default:
         return '';
     }
