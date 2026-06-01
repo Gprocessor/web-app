@@ -6,7 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatDialog } from '@angular/material/dialog';
 import { ActivatedRoute } from '@angular/router';
 import { Dates } from 'app/core/utils/dates';
@@ -65,6 +66,7 @@ import { LoanAccountTabBaseComponent } from '../loan-account-tab-base.component'
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class LoanTrancheDetailsComponent extends LoanAccountTabBaseComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private route = inject(ActivatedRoute);
   private dialog = inject(MatDialog);
   private loanServices = inject(LoansService);
@@ -101,7 +103,7 @@ export class LoanTrancheDetailsComponent extends LoanAccountTabBaseComponent imp
    */
   constructor() {
     super();
-    this.route.parent.data.subscribe((data: { loanDetailsData: any }) => {
+    this.route.parent.data.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((data: { loanDetailsData: any }) => {
       this.loanId = data.loanDetailsData.id;
       this.loanDetails = data.loanDetailsData;
       this.disallowExpectedDisbursements = this.loanDetails.disallowExpectedDisbursements || false;

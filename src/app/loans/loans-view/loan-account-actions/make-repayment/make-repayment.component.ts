@@ -18,8 +18,6 @@ import { PenaltyManagementService } from 'app/loans/services/penalty-management.
 import { AlertService } from 'app/core/alert/alert.service';
 import { InputAmountComponent } from '../../../../shared/input-amount/input-amount.component';
 import { MatSlideToggle } from '@angular/material/slide-toggle';
-import { MatCheckbox } from '@angular/material/checkbox';
-import { CdkTextareaAutosize } from '@angular/cdk/text-field';
 import { FormatNumberPipe } from '../../../../pipes/format-number.pipe';
 import { STANDALONE_SHARED_IMPORTS } from 'app/standalone-shared.module';
 import { LoanAccountActionsBaseComponent } from '../loan-account-actions-base.component';
@@ -35,8 +33,6 @@ import { LoanAccountActionsBaseComponent } from '../loan-account-actions-base.co
     ...STANDALONE_SHARED_IMPORTS,
     InputAmountComponent,
     MatSlideToggle,
-    MatCheckbox,
-    CdkTextareaAutosize,
     FormatNumberPipe
   ],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -372,7 +368,6 @@ export class MakeRepaymentComponent extends LoanAccountActionsBaseComponent impl
       if (payload['paymentTypeId'] === null) {
         delete payload['paymentTypeId'];
       } else {
-        console.log(payload);
         if ('paymentDetails' in payload) {
           payload['paymentDetails']['paymentTypeId'] = payload['paymentTypeId'];
         } else {
@@ -424,7 +419,6 @@ export class MakeRepaymentComponent extends LoanAccountActionsBaseComponent impl
           }
         });
     } else {
-      console.log(payload);
       this.loanService
         .applyWorkingCapitalLoanActionCommand(this.loanId, payload, this.command)
         .pipe(takeUntilDestroyed(this.destroyRef))

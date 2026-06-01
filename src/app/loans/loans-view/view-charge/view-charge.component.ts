@@ -7,7 +7,8 @@
  */
 
 /** Angular Imports */
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 
@@ -50,6 +51,7 @@ import { LoanAccountTabBaseComponent } from '../loan-account-tab-base.component'
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ViewChargeComponent extends LoanAccountTabBaseComponent {
+  private readonly destroyRef = inject(DestroyRef);
   private loansService = inject(LoansService);
   private route = inject(ActivatedRoute);
   private dateUtils = inject(Dates);
@@ -75,12 +77,14 @@ export class ViewChargeComponent extends LoanAccountTabBaseComponent {
    */
   constructor() {
     super();
-    this.route.data.subscribe((data: { loansAccountCharge: any; loanDetailsData: any }) => {
-      this.chargeData = data.loansAccountCharge;
-      this.allowPayCharge = this.chargeData.chargePayable && !this.chargeData.paid;
-      this.allowWaive = !this.chargeData.chargeTimeType.waived;
-      this.loansAccountData = data.loanDetailsData;
-    });
+    this.route.data
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((data: { loansAccountCharge: any; loanDetailsData: any }) => {
+        this.chargeData = data.loansAccountCharge;
+        this.allowPayCharge = this.chargeData.chargePayable && !this.chargeData.paid;
+        this.allowWaive = !this.chargeData.chargeTimeType.waived;
+        this.loansAccountData = data.loanDetailsData;
+      });
   }
 
   /**

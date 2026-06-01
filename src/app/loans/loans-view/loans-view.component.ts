@@ -7,7 +7,8 @@
  */
 
 /** Angular Imports */
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, NavigationExtras, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 
@@ -75,6 +76,7 @@ import { LoanProductBaseComponent } from 'app/products/loan-products/common/loan
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class LoansViewComponent extends LoanProductBaseComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private route = inject(ActivatedRoute);
   loansService = inject(LoansService);
   private translateService = inject(TranslateService);
@@ -114,8 +116,9 @@ export class LoansViewComponent extends LoanProductBaseComponent implements OnIn
     const loansService = this.loansService;
     this.loanProductService.initialize(LoanProductBaseComponent.resolveProductTypeDefault(this.route, 'loan'));
 
-    this.route.data.subscribe(
-      (data: { loanDetailsData: any; loanDatatables: any; loanArrearsDelinquencyConfig: any }) => {
+    this.route.data
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((data: { loanDetailsData: any; loanDatatables: any; loanArrearsDelinquencyConfig: any }) => {
         this.loanDetailsData = data.loanDetailsData;
         if (!this.loanDetailsData.loanProductName) {
           this.loanDetailsData.loanProductName = this.loanDetailsData.product.name;
@@ -142,13 +145,12 @@ export class LoansViewComponent extends LoanProductBaseComponent implements OnIn
           this.filterDatatablesByProduct();
         }
         this.setConditionalButtons();
-      }
-    );
+      });
     this.loanId = this.route.snapshot.params['loanId'];
   }
 
   ngOnInit() {
-    this.route.params.subscribe((params) => {
+    this.route.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       if (this.loanId != params['loanId']) {
         this.loanId = params['loanId'];
         this.reload();

@@ -5,7 +5,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { STANDALONE_SHARED_IMPORTS } from 'app/standalone-shared.module';
 import {
   MatTable,
@@ -50,6 +51,7 @@ import { InputBase } from 'app/shared/form-dialog/formfield/model/input-base';
   ]
 })
 export class LoanPeriodPaymentRatesComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private route = inject(ActivatedRoute);
   private dialog = inject(MatDialog);
   private translateService = inject(TranslateService);
@@ -73,9 +75,11 @@ export class LoanPeriodPaymentRatesComponent implements OnInit {
   ngOnInit(): void {
     this.loanId = this.route.parent.snapshot.params['loanId'];
 
-    this.route.data.subscribe((data: { loanPaymentRatesData: PeriodPaymentRateChange[] }) => {
-      this.loanPaymentRatesData = data.loanPaymentRatesData;
-    });
+    this.route.data
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((data: { loanPaymentRatesData: PeriodPaymentRateChange[] }) => {
+        this.loanPaymentRatesData = data.loanPaymentRatesData;
+      });
   }
 
   addPaymentRate(): void {

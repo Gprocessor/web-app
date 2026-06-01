@@ -6,7 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import { ChangeDetectionStrategy, Component, ViewChild, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ViewChild, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { LoansService } from '../loans.service';
 import { LoansAccountDetailsStepComponent } from '../loans-account-stepper/loans-account-details-step/loans-account-details-step.component';
@@ -47,6 +48,7 @@ import { LoanProductBaseComponent } from 'app/products/loan-products/common/loan
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class EditLoansAccountComponent extends LoanProductBaseComponent {
+  private readonly destroyRef = inject(DestroyRef);
   private route = inject(ActivatedRoute);
   private dateUtils = inject(Dates);
   private loansService = inject(LoansService);
@@ -79,8 +81,9 @@ export class EditLoansAccountComponent extends LoanProductBaseComponent {
     this.loanProductService.initialize(LoanProductBaseComponent.resolveProductTypeDefault(this.route, 'loan'));
 
     this.loanId = this.route.snapshot.params['loanId'];
-    this.route.data.subscribe(
-      (data: { loansAccountAndTemplate: any; loanProductsBasicDetails: LoanProductBasicDetails[] }) => {
+    this.route.data
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((data: { loansAccountAndTemplate: any; loanProductsBasicDetails: LoanProductBasicDetails[] }) => {
         this.loansAccountAndTemplate = data.loansAccountAndTemplate;
         if (this.loanProductService.isLoanProduct) {
           this.loansAccountProductTemplate = data.loansAccountAndTemplate;
@@ -92,8 +95,7 @@ export class EditLoansAccountComponent extends LoanProductBaseComponent {
           );
         }
         this.loanProductsBasicDetails = data.loanProductsBasicDetails;
-      }
-    );
+      });
   }
 
   /**

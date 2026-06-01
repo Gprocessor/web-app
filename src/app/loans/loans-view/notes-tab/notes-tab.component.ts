@@ -6,7 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 
 /** Custom Components */
@@ -28,6 +29,7 @@ import { STANDALONE_SHARED_IMPORTS } from 'app/standalone-shared.module';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class NotesTabComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private route = inject(ActivatedRoute);
   private loansService = inject(LoansService);
   private authenticationService = inject(AuthenticationService);
@@ -40,13 +42,13 @@ export class NotesTabComponent implements OnInit {
     const savedCredentials = this.authenticationService.getCredentials();
     this.username = savedCredentials.username;
     this.entityId = this.route.parent.snapshot.params['loanId'];
-    this.route.data.subscribe((data: { loanNotes: any }) => {
+    this.route.data.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((data: { loanNotes: any }) => {
       this.entityNotes = data.loanNotes;
     });
   }
 
   ngOnInit(): void {
-    this.route.parent.params.subscribe((params) => {
+    this.route.parent.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       this.entityId = params['loanId'];
     });
   }

@@ -6,7 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import {
   MatTableDataSource,
@@ -47,6 +48,7 @@ import { LoanSummaryBalanceComponentComponent } from './loan-summary-balance-com
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class GeneralTabComponent extends LoanProductBaseComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private route = inject(ActivatedRoute);
 
   /** Currency Code */
@@ -70,7 +72,7 @@ export class GeneralTabComponent extends LoanProductBaseComponent implements OnI
     if (productType) {
       this.loanProductService.initialize(productType);
     }
-    this.route.parent.data.subscribe((data: { loanDetailsData: any }) => {
+    this.route.parent.data.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((data: { loanDetailsData: any }) => {
       this.loanDetails = data.loanDetailsData;
       this.currencyCode = this.loanDetails.currency.code;
       if (this.loanDetails.transactions) {

@@ -12,11 +12,13 @@ import {
   AfterViewInit,
   ChangeDetectorRef,
   Component,
+  DestroyRef,
   QueryList,
   ViewChild,
   ViewChildren,
   inject
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 
 /** Custom Services */
@@ -62,6 +64,7 @@ import { Dates } from 'app/core/utils/dates';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CreateLoansAccountComponent extends LoanProductBaseComponent implements AfterViewInit {
+  private readonly destroyRef = inject(DestroyRef);
   private route = inject(ActivatedRoute);
   private loansService = inject(LoansService);
   private settingsService = inject(SettingsService);
@@ -110,12 +113,12 @@ export class CreateLoansAccountComponent extends LoanProductBaseComponent implem
   constructor() {
     super();
     this.loanProductsBasicDetails = [];
-    this.route.data.subscribe(
-      (data: { loansAccountTemplate: any; loanProductsBasicDetails: LoanProductBasicDetails[] }) => {
+    this.route.data
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((data: { loansAccountTemplate: any; loanProductsBasicDetails: LoanProductBasicDetails[] }) => {
         this.loanProductsBasicDetails = data.loanProductsBasicDetails;
         this.loansAccountTemplate = data.loansAccountTemplate;
-      }
-    );
+      });
   }
 
   ngAfterViewInit() {

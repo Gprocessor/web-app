@@ -7,7 +7,8 @@
  */
 
 /** Angular Imports */
-import { ChangeDetectionStrategy, Component, OnInit, ViewChild, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, ViewChild, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { MatPaginator } from '@angular/material/paginator';
@@ -78,6 +79,7 @@ import { LoanAccountTabBaseComponent } from '../loan-account-tab-base.component'
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ChargesTabComponent extends LoanAccountTabBaseComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private loansService = inject(LoansService);
   private route = inject(ActivatedRoute);
   private dateUtils = inject(Dates);
@@ -122,7 +124,7 @@ export class ChargesTabComponent extends LoanAccountTabBaseComponent implements 
    */
   constructor() {
     super();
-    this.route.parent.data.subscribe((data: { loanDetailsData: any }) => {
+    this.route.parent.data.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((data: { loanDetailsData: any }) => {
       this.loanDetails = data.loanDetailsData;
     });
   }
