@@ -8,10 +8,11 @@
 
 /** Angular Imports */
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 /** rxjs Imports */
-import { Observable, Subscription } from 'rxjs';
+import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 /** Custom Services */
@@ -47,10 +48,11 @@ import { STANDALONE_SHARED_IMPORTS } from 'app/standalone-shared.module';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ShellComponent implements OnInit, OnDestroy {
+export class ShellComponent implements OnInit {
   private breakpointObserver = inject(BreakpointObserver);
   private progressBarService = inject(ProgressBarService);
   private cdr = inject(ChangeDetectorRef);
+  private destroyRef = inject(DestroyRef);
 
   /** Subscription to breakpoint observer for handset. */
   isHandset$: Observable<boolean> = this.breakpointObserver
@@ -60,14 +62,12 @@ export class ShellComponent implements OnInit, OnDestroy {
   sidenavCollapsed = true;
   /** Progress bar mode. */
   progressBarMode: string;
-  /** Subscription to progress bar. */
-  progressBar$: Subscription;
 
   /**
    * Subscribes to progress bar to update its mode.
    */
   ngOnInit() {
-    this.progressBar$ = this.progressBarService.updateProgressBar.subscribe((mode: string) => {
+    this.progressBarService.updateProgressBar.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((mode: string) => {
       this.progressBarMode = mode;
       this.cdr.detectChanges();
     });
@@ -80,14 +80,5 @@ export class ShellComponent implements OnInit, OnDestroy {
   toggleCollapse($event: boolean) {
     this.sidenavCollapsed = $event;
     this.cdr.detectChanges();
-  }
-
-  /**
-   * Unsubscribes from progress bar.
-   */
-  ngOnDestroy() {
-    if (this.progressBar$) {
-      this.progressBar$.unsubscribe();
-    }
   }
 }

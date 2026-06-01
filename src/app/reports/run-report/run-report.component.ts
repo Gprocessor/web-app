@@ -7,9 +7,10 @@
  */
 
 /** Angular Imports */
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
-import { AbstractControl, UntypedFormControl, UntypedFormGroup, ValidatorFn, Validators } from '@angular/forms';
+import { AbstractControl, FormControl, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 
 /** Custom Services */
 import { ReportsService } from '../reports.service';
@@ -59,6 +60,7 @@ export class RunReportComponent implements OnInit {
   private alertService = inject(AlertService);
   private translateService = inject(TranslateService);
   private dateUtils = inject(Dates);
+  private destroyRef = inject(DestroyRef);
 
   /** Minimum date allowed. */
   minDate = new Date(2000, 0, 1);
@@ -77,9 +79,9 @@ export class RunReportComponent implements OnInit {
   dataObject: any;
 
   /** Initializes new form group eportForm */
-  reportForm = new UntypedFormGroup({});
+  reportForm = new FormGroup({});
   /** Static Form control for decimal places in output */
-  decimalChoice = new UntypedFormControl();
+  decimalChoice = new FormControl();
 
   /** Toggles Report form */
   isCollapsed = false;
@@ -109,32 +111,36 @@ export class RunReportComponent implements OnInit {
    */
   constructor() {
     this.report.name = this.route.snapshot.params['name'];
-    this.route.queryParams.subscribe((queryParams: { type: any; id: any }) => {
-      this.report.type = queryParams.type;
-      this.report.id = queryParams.id;
-    });
-    this.route.data.subscribe((data: { reportParameters: ReportParameter[]; configurations: any }) => {
-      this.paramData = data.reportParameters;
-      if (this.isTableReport()) {
-        const amazonS3Config = data.configurations.globalConfiguration.find(
-          (config: GlobalConfiguration) => config.name === 'amazon-s3'
-        );
-        const reportExportS3Config = data.configurations.globalConfiguration.find(
-          (config: GlobalConfiguration) => config.name === 'report-export-s3-folder-name'
-        );
+    this.route.queryParams
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((queryParams: { type: any; id: any }) => {
+        this.report.type = queryParams.type;
+        this.report.id = queryParams.id;
+      });
+    this.route.data
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((data: { reportParameters: ReportParameter[]; configurations: any }) => {
+        this.paramData = data.reportParameters;
+        if (this.isTableReport()) {
+          const amazonS3Config = data.configurations.globalConfiguration.find(
+            (config: GlobalConfiguration) => config.name === 'amazon-s3'
+          );
+          const reportExportS3Config = data.configurations.globalConfiguration.find(
+            (config: GlobalConfiguration) => config.name === 'report-export-s3-folder-name'
+          );
 
-        if (
-          amazonS3Config &&
-          amazonS3Config.enabled &&
-          reportExportS3Config &&
-          reportExportS3Config.enabled &&
-          reportExportS3Config.stringValue
-        ) {
-          this.exportToS3Allowed = true;
-          this.exportToS3Repository = reportExportS3Config.stringValue;
+          if (
+            amazonS3Config &&
+            amazonS3Config.enabled &&
+            reportExportS3Config &&
+            reportExportS3Config.enabled &&
+            reportExportS3Config.stringValue
+          ) {
+            this.exportToS3Allowed = true;
+            this.exportToS3Repository = reportExportS3Config.stringValue;
+          }
         }
-      }
-    });
+      });
   }
 
   isTableReport(): boolean {
@@ -165,7 +171,7 @@ export class RunReportComponent implements OnInit {
     this.paramData.forEach((param: ReportParameter) => {
       if (!param.parentParameterName) {
         // Non Child Parameter
-        this.reportForm.addControl(param.name, new UntypedFormControl('', Validators.required));
+        this.reportForm.addControl(param.name, new FormControl('', Validators.required));
         if (param.displayType === 'select') {
           this.fetchSelectOptions(param, param.name);
         }
@@ -179,7 +185,7 @@ export class RunReportComponent implements OnInit {
       }
     });
     if (this.isPentahoReport()) {
-      this.reportForm.addControl('outputType', new UntypedFormControl('', Validators.required));
+      this.reportForm.addControl('outputType', new FormControl('', Validators.required));
       this.outputTypeOptions = [
         { name: 'PDF format', value: 'PDF' },
         { name: 'Normal format', value: 'HTML' },
@@ -190,7 +196,7 @@ export class RunReportComponent implements OnInit {
       this.mapPentahoParams();
     }
     if (this.isBirtReport()) {
-      this.reportForm.addControl('outputType', new UntypedFormControl('', Validators.required));
+      this.reportForm.addControl('outputType', new FormControl('', Validators.required));
       this.outputTypeOptions = [
         { name: 'PDF format', value: 'PDF' },
         { name: 'Normal format', value: 'HTML' },
@@ -201,7 +207,7 @@ export class RunReportComponent implements OnInit {
       this.mapBirtParams();
     }
     if (this.exportToS3Allowed) {
-      this.reportForm.addControl('exportOutputToS3', new UntypedFormControl(false));
+      this.reportForm.addControl('exportOutputToS3', new FormControl(false));
     }
     this.decimalChoice.patchValue('2');
     this.setChildControls();
@@ -274,7 +280,9 @@ export class RunReportComponent implements OnInit {
 
     endControl.addValidators(this.endDateAfterStartValidator(startParam.name));
     endControl.updateValueAndValidity({ emitEvent: false });
-    startControl.valueChanges.subscribe(() => endControl.updateValueAndValidity({ emitEvent: false }));
+    startControl.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => endControl.updateValueAndValidity({ emitEvent: false }));
   }
 
   endDateAfterStartValidator(startControlName: string): ValidatorFn {
@@ -317,19 +325,22 @@ export class RunReportComponent implements OnInit {
    */
   setChildControls() {
     this.parentParameters.forEach((param: ReportParameter) => {
-      this.reportForm.get(param.name).valueChanges.subscribe((option: any) => {
-        param.childParameters.forEach((child: ReportParameter) => {
-          if (child.displayType === 'none') {
-            this.reportForm.addControl(child.name, new UntypedFormControl(child.defaultVal));
-          } else {
-            this.reportForm.addControl(child.name, new UntypedFormControl('', Validators.required));
-          }
-          if (child.displayType === 'select') {
-            const inputstring = `${child.name}?${param.inputName}=${option.id}`;
-            this.fetchSelectOptions(child, inputstring);
-          }
+      this.reportForm
+        .get(param.name)
+        .valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe((option: any) => {
+          param.childParameters.forEach((child: ReportParameter) => {
+            if (child.displayType === 'none') {
+              this.reportForm.addControl(child.name, new FormControl(child.defaultVal));
+            } else {
+              this.reportForm.addControl(child.name, new FormControl('', Validators.required));
+            }
+            if (child.displayType === 'select') {
+              const inputstring = `${child.name}?${param.inputName}=${option.id}`;
+              this.fetchSelectOptions(child, inputstring);
+            }
+          });
         });
-      });
     });
   }
 
