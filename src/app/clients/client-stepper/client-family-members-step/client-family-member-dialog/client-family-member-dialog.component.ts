@@ -123,7 +123,8 @@ export class ClientFamilyMemberDialogComponent implements OnInit {
       ],
       qualification: [''],
       age: [
-        { value: '', disabled: true }],
+        { value: '', disabled: true }
+      ],
       isDependent: [''],
       relationshipId: [
         '',

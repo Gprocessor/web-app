@@ -2,9 +2,9 @@ name: Tests
 
 on:
   push:
-    branches: [main, dev, dev-angular-19]
+    branches: [main, dev]
   pull_request:
-    branches: [main, dev, dev-angular-19]
+    branches: [main, dev]
 
 jobs:
   testRigor:
@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Use Node.js 22
+      - name: Use Node.js 24
         uses: actions/setup-node@v6
         with:
           node-version: '24.14.0'
