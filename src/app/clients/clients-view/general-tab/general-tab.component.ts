@@ -7,7 +7,8 @@
  */
 
 /** Angular Imports */
-import { ChangeDetectionStrategy, Component, OnDestroy, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnDestroy, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, ActivatedRoute } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
@@ -41,8 +42,7 @@ import { CurrencyPipe } from '@angular/common';
 import { STANDALONE_SHARED_IMPORTS } from 'app/standalone-shared.module';
 import { ReportsService } from 'app/reports/reports.service';
 import { SettingsService } from 'app/settings/settings.service';
-import { Subject } from 'rxjs';
-import { takeUntil, catchError } from 'rxjs/operators';
+import { catchError } from 'rxjs/operators';
 import { AlertService } from 'app/core/alert/alert.service';
 import { EMPTY } from 'rxjs';
 import { LoanProductService } from 'app/products/loan-products/services/loan-product.service';
@@ -83,9 +83,9 @@ import { LoanProductService } from 'app/products/loan-products/services/loan-pro
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class GeneralTabComponent implements OnDestroy {
-  private destroy$ = new Subject<void>();
   private alertService = inject(AlertService);
   private sanitizer = inject(DomSanitizer);
+  private destroyRef = inject(DestroyRef);
   pdfUrl: SafeResourceUrl | null = null;
   rawPdfUrl: string | null = null;
   showPdf: boolean = false;
@@ -100,7 +100,6 @@ export class GeneralTabComponent implements OnDestroy {
     this.reportsService
       .getPentahoRunReportData('LoanApplicationReport', formData, tenantIdentifier, locale, dateFormat)
       .pipe(
-        takeUntil(this.destroy$),
         catchError((error): any => {
           this.showPdf = false;
           if (this.rawPdfUrl) {
@@ -113,7 +112,8 @@ export class GeneralTabComponent implements OnDestroy {
             message: 'Failed to load Loan Application PDF report.'
           });
           return EMPTY;
-        })
+        }),
+        takeUntilDestroyed(this.destroyRef)
       )
       .subscribe((res: any) => {
         if (this.rawPdfUrl) {
@@ -139,8 +139,6 @@ export class GeneralTabComponent implements OnDestroy {
   }
 
   ngOnDestroy() {
-    this.destroy$.next();
-    this.destroy$.complete();
     if (this.rawPdfUrl) {
       URL.revokeObjectURL(this.rawPdfUrl);
       this.rawPdfUrl = null;
@@ -274,26 +272,28 @@ export class GeneralTabComponent implements OnDestroy {
    * @param {Router} router Router
    */
   constructor() {
-    this.route.data.subscribe(
-      (data: { clientAccountsData: any; clientChargesData: any; clientSummary: any; clientCollateralData: any }) => {
-        this.clientAccountData = data.clientAccountsData;
-        this.savingAccounts = data.clientAccountsData?.savingsAccounts ?? [];
-        this.loanAccounts = [];
-        this.processLoanAccounts(data.clientAccountsData?.loanAccounts ?? [], 'loan');
-        this.processLoanAccounts(data.clientAccountsData?.workingCapitalLoanAccounts ?? [], 'working-capital');
-        this.workingCapitalLoanAccounts = data.clientAccountsData?.workingCapitalLoanAccounts ?? [];
-        this.shareAccounts = data.clientAccountsData?.shareAccounts ?? [];
+    this.route.data
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(
+        (data: { clientAccountsData: any; clientChargesData: any; clientSummary: any; clientCollateralData: any }) => {
+          this.clientAccountData = data.clientAccountsData;
+          this.savingAccounts = data.clientAccountsData?.savingsAccounts ?? [];
+          this.loanAccounts = [];
+          this.processLoanAccounts(data.clientAccountsData?.loanAccounts ?? [], 'loan');
+          this.processLoanAccounts(data.clientAccountsData?.workingCapitalLoanAccounts ?? [], 'working-capital');
+          this.workingCapitalLoanAccounts = data.clientAccountsData?.workingCapitalLoanAccounts ?? [];
+          this.shareAccounts = data.clientAccountsData?.shareAccounts ?? [];
 
-        this.upcomingCharges = data.clientChargesData?.pageItems ?? [];
+          this.upcomingCharges = data.clientChargesData?.pageItems ?? [];
 
-        this.collaterals = data.clientCollateralData ?? [];
+          this.collaterals = data.clientCollateralData ?? [];
 
-        this.clientid = this.route.parent.snapshot.params['clientId'];
+          this.clientid = this.route.parent.snapshot.params['clientId'];
 
-        // Compute performance history from accounts data
-        this.computePerformanceHistory(data.clientAccountsData ?? { loanAccounts: [], savingsAccounts: [] });
-      }
-    );
+          // Compute performance history from accounts data
+          this.computePerformanceHistory(data.clientAccountsData ?? { loanAccounts: [], savingsAccounts: [] });
+        }
+      );
   }
 
   private computePerformanceHistory(accountsData: any) {
