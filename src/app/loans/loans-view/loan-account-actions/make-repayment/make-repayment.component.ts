@@ -180,7 +180,7 @@ export class MakeRepaymentComponent extends LoanAccountActionsBaseComponent impl
   }
 
   showDetails(): boolean {
-    return !this.isCapitalizedIncome() && !this.isBuyDownFee();
+    return this.loanProductService.isWorkingCapital ? false : !this.isCapitalizedIncome() && !this.isBuyDownFee();
   }
 
   isCapitalizedIncome(): boolean {
