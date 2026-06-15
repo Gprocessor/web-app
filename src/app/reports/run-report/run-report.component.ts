@@ -7,7 +7,7 @@
  */
 
 /** Angular Imports */
-import { ChangeDetectionStrategy, Component, OnInit, inject, DestroyRef } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { AbstractControl, FormControl, FormGroup, ValidatorFn, Validators } from '@angular/forms';
@@ -25,8 +25,6 @@ import { GlobalConfiguration } from 'app/system/configurations/global-configurat
 import * as ExcelJS from 'exceljs';
 import { AlertService } from 'app/core/alert/alert.service';
 import { TranslateService } from '@ngx-translate/core';
-import { NgSwitch, NgSwitchCase } from '@angular/common';
-import { MatCheckbox } from '@angular/material/checkbox';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { TableAndSmsComponent } from './table-and-sms/table-and-sms.component';
 import { ChartComponent } from './chart/chart.component';
@@ -41,11 +39,9 @@ import { STANDALONE_SHARED_IMPORTS } from 'app/standalone-shared.module';
   selector: 'mifosx-run-report',
   templateUrl: './run-report.component.html',
   styleUrls: ['./run-report.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ...STANDALONE_SHARED_IMPORTS,
-    NgSwitch,
-    NgSwitchCase,
-    MatCheckbox,
     FaIconComponent,
     TableAndSmsComponent,
     ChartComponent,
@@ -61,6 +57,7 @@ export class RunReportComponent implements OnInit {
   private translateService = inject(TranslateService);
   private dateUtils = inject(Dates);
   private destroyRef = inject(DestroyRef);
+  private cdr = inject(ChangeDetectorRef);
 
   /** Minimum date allowed. */
   minDate = new Date(2000, 0, 1);
@@ -102,6 +99,17 @@ export class RunReportComponent implements OnInit {
 
   isProcessing = false;
 
+  /** Options for the decimal-precision segmented control. */
+  readonly decimalOptions: string[] = [
+    '0',
+    '1',
+    '2',
+    '3',
+    '4'
+  ];
+
+  private dateRangeValidatorApplied = false;
+
   /**
    * Fetches report specifications from route params and retrieves report parameters data from `resolve`.
    * @param {ActivatedRoute} route ActivatedRoute.
@@ -121,6 +129,8 @@ export class RunReportComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((data: { reportParameters: ReportParameter[]; configurations: any }) => {
         this.paramData = data.reportParameters;
+        console.log(this.paramData);
+        this.createRunReportForm();
         if (this.isTableReport()) {
           const amazonS3Config = data.configurations.globalConfiguration.find(
             (config: GlobalConfiguration) => config.name === 'amazon-s3'
@@ -160,7 +170,6 @@ export class RunReportComponent implements OnInit {
    */
   ngOnInit() {
     this.maxDate = this.settingsService.maxAllowedDate;
-    this.createRunReportForm();
   }
 
   /**
@@ -186,24 +195,12 @@ export class RunReportComponent implements OnInit {
     });
     if (this.isPentahoReport()) {
       this.reportForm.addControl('outputType', new FormControl('', Validators.required));
-      this.outputTypeOptions = [
-        { name: 'PDF format', value: 'PDF' },
-        { name: 'Normal format', value: 'HTML' },
-        { name: 'Excel format', value: 'XLS' },
-        { name: 'Excel 2007 format', value: 'XLSX' },
-        { name: 'CSV format', value: 'CSV' }
-      ];
+      this.outputTypeOptions = this.buildOutputTypeOptions();
       this.mapPentahoParams();
     }
     if (this.isBirtReport()) {
       this.reportForm.addControl('outputType', new FormControl('', Validators.required));
-      this.outputTypeOptions = [
-        { name: 'PDF format', value: 'PDF' },
-        { name: 'Normal format', value: 'HTML' },
-        { name: 'Excel format', value: 'XLS' },
-        { name: 'Excel 2007 format', value: 'XLSX' },
-        { name: 'CSV format', value: 'CSV' }
-      ];
+      this.outputTypeOptions = this.buildOutputTypeOptions();
       this.mapBirtParams();
     }
     if (this.exportToS3Allowed) {
@@ -212,6 +209,37 @@ export class RunReportComponent implements OnInit {
     this.decimalChoice.patchValue('2');
     this.setChildControls();
     this.addDateRangeValidator();
+  }
+
+  private buildOutputTypeOptions() {
+    return [
+      { name: 'PDF format', value: 'PDF', i18nKey: 'labels.inputs.PDF format' },
+      { name: 'Normal format', value: 'HTML', i18nKey: 'labels.inputs.Normal format' },
+      { name: 'Excel format', value: 'XLS', i18nKey: 'labels.inputs.Excel format' },
+      { name: 'Excel 2007 format', value: 'XLSX', i18nKey: 'labels.inputs.Excel 2007 format' },
+      { name: 'CSV format', value: 'CSV', i18nKey: 'labels.inputs.CSV format' }
+    ];
+  }
+
+  setDecimal(value: string): void {
+    this.decimalChoice.setValue(value);
+  }
+
+  setOutputType(value: string): void {
+    const control = this.reportForm.get('outputType');
+    if (!control) {
+      return;
+    }
+    control.setValue(value as never);
+    control.markAsTouched();
+  }
+
+  toggleS3(): void {
+    const control = this.reportForm.get('exportOutputToS3');
+    if (!control) {
+      return;
+    }
+    control.setValue(!control.value as never);
   }
 
   /**
@@ -263,6 +291,10 @@ export class RunReportComponent implements OnInit {
   }
 
   addDateRangeValidator(): void {
+    if (this.dateRangeValidatorApplied) {
+      return;
+    }
+
     const dateParams = this.paramData.filter((param: ReportParameter) => param.displayType === 'date');
     const startParam = dateParams.find((param: ReportParameter) => this.isStartDateParam(param));
     const endParam = dateParams.find((param: ReportParameter) => this.isEndDateParam(param));
@@ -283,6 +315,8 @@ export class RunReportComponent implements OnInit {
     startControl.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => endControl.updateValueAndValidity({ emitEvent: false }));
+
+    this.dateRangeValidatorApplied = true;
   }
 
   endDateAfterStartValidator(startControlName: string): ValidatorFn {
@@ -325,22 +359,31 @@ export class RunReportComponent implements OnInit {
    */
   setChildControls() {
     this.parentParameters.forEach((param: ReportParameter) => {
-      this.reportForm
-        .get(param.name)
-        .valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe((option: any) => {
-          param.childParameters.forEach((child: ReportParameter) => {
-            if (child.displayType === 'none') {
-              this.reportForm.addControl(child.name, new FormControl(child.defaultVal));
-            } else {
-              this.reportForm.addControl(child.name, new FormControl('', Validators.required));
-            }
-            if (child.displayType === 'select') {
-              const inputstring = `${child.name}?${param.inputName}=${option.id}`;
-              this.fetchSelectOptions(child, inputstring);
-            }
-          });
+      const parentControl = this.reportForm.get(param.name);
+      if (!parentControl) {
+        return;
+      }
+      parentControl.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((option: any) => {
+        param.childParameters.forEach((child: ReportParameter) => {
+          const newControl =
+            child.displayType === 'none' ? new FormControl(child.defaultVal) : new FormControl('', Validators.required);
+
+          if (this.reportForm.contains(child.name)) {
+            this.reportForm.setControl(child.name, newControl);
+          } else {
+            this.reportForm.addControl(child.name, newControl);
+          }
+
+          if (child.displayType === 'select') {
+            child.selectOptions = [];
+            const parentId = option?.id ?? option;
+            const inputstring = `${child.name}?${param.inputName}=${parentId}`;
+            this.fetchSelectOptions(child, inputstring);
+          }
         });
+        this.addDateRangeValidator();
+        this.cdr.markForCheck();
+      });
     });
   }
 
@@ -355,6 +398,7 @@ export class RunReportComponent implements OnInit {
       if (param.selectAll === 'Y') {
         param.selectOptions.push({ id: '-1', name: 'All' });
       }
+      this.cdr.markForCheck();
     });
   }
 
