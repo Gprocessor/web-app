@@ -37,7 +37,7 @@ import { DatetimeFormatPipe } from '../../../../pipes/datetime-format.pipe';
 import { FormatNumberPipe } from '../../../../pipes/format-number.pipe';
 import { PrettyPrintPipe } from '../../../../pipes/pretty-print.pipe';
 import { STANDALONE_SHARED_IMPORTS } from 'app/standalone-shared.module';
-import { formatTabLabel } from 'app/shared/utils/format-tab-label.util';
+import { formatDatatableDisplayLabel } from '@pipes/datatable-display-label.pipe';
 
 @Component({
   selector: 'mifosx-datatable-single-row',
@@ -75,7 +75,11 @@ export class DatatableSingleRowComponent implements OnInit, OnChanges {
   datatableName: string;
 
   formatTabLabel(label: string): string {
-    return formatTabLabel(label);
+    return formatDatatableDisplayLabel(label);
+  }
+
+  formatDisplayLabel(label: string): string {
+    return formatDatatableDisplayLabel(label);
   }
 
   ngOnInit() {
@@ -103,7 +107,7 @@ export class DatatableSingleRowComponent implements OnInit, OnChanges {
       dataTableEntryObject
     );
     const data = {
-      title: 'Add ' + formatTabLabel(this.datatableName) + ' for ' + this.entityType,
+      title: 'Add ' + formatDatatableDisplayLabel(this.datatableName) + ' for ' + this.entityType,
       formfields: formfields
     };
     const addDialogRef = this.dialog.open(FormDialogComponent, { data, width: '50rem' });
@@ -156,7 +160,7 @@ export class DatatableSingleRowComponent implements OnInit, OnChanges {
       return formfield;
     });
     const data = {
-      title: 'Edit ' + formatTabLabel(this.datatableName) + ' for ' + this.entityType,
+      title: 'Edit ' + formatDatatableDisplayLabel(this.datatableName) + ' for ' + this.entityType,
       formfields: formfields,
       layout: { addButtonText: 'Submit' },
       pristine: false
@@ -185,7 +189,7 @@ export class DatatableSingleRowComponent implements OnInit, OnChanges {
 
   delete() {
     const deleteDataTableDialogRef = this.dialog.open(DeleteDialogComponent, {
-      data: { deleteContext: ` the contents of ${formatTabLabel(this.datatableName)}` }
+      data: { deleteContext: ` the contents of ${formatDatatableDisplayLabel(this.datatableName)}` }
     });
     deleteDataTableDialogRef.afterClosed().subscribe((response: any) => {
       if (response?.delete) {

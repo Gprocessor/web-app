@@ -22,7 +22,7 @@ import {
 } from '@angular/core';
 import { MatCheckboxChange as MatCheckboxChange, MatCheckbox } from '@angular/material/checkbox';
 import { MatDialog } from '@angular/material/dialog';
-import { formatTabLabel } from 'app/shared/utils/format-tab-label.util';
+import { formatDatatableDisplayLabel } from '@pipes/datatable-display-label.pipe';
 import {
   MatTable,
   MatColumnDef,
@@ -76,7 +76,7 @@ import { STANDALONE_SHARED_IMPORTS } from 'app/standalone-shared.module';
 })
 export class DatatableMultiRowComponent implements OnInit, OnDestroy, OnChanges {
   formatTabLabel(label: string): string {
-    return formatTabLabel(label);
+    return formatDatatableDisplayLabel(label);
   }
   private route = inject(ActivatedRoute);
   private dateUtils = inject(Dates);
@@ -190,7 +190,7 @@ export class DatatableMultiRowComponent implements OnInit, OnDestroy, OnChanges 
       dataTableEntryObject
     );
     const data = {
-      title: 'Add ' + formatTabLabel(this.datatableName) + ' for ' + this.entityType,
+      title: 'Add ' + formatDatatableDisplayLabel(this.datatableName) + ' for ' + this.entityType,
       formfields: formfields
     };
     const addDialogRef = this.dialog.open(FormDialogComponent, { data, width: '50rem' });
@@ -217,7 +217,7 @@ export class DatatableMultiRowComponent implements OnInit, OnDestroy, OnChanges 
    */
   delete() {
     const deleteDataTableDialogRef = this.dialog.open(DeleteDialogComponent, {
-      data: { deleteContext: `the contents of ${formatTabLabel(this.datatableName)}` }
+      data: { deleteContext: `the contents of ${formatDatatableDisplayLabel(this.datatableName)}` }
     });
     deleteDataTableDialogRef.afterClosed().subscribe((response: any) => {
       if (response.delete) {
@@ -234,7 +234,7 @@ export class DatatableMultiRowComponent implements OnInit, OnDestroy, OnChanges 
   deleteSelected() {
     const deleteDataTableDialogRef = this.dialog.open(DeleteDialogComponent, {
       data: {
-        deleteContext: `the ${this.selection.selected.length} items selected of ${formatTabLabel(this.datatableName)}`
+        deleteContext: `the ${this.selection.selected.length} items selected of ${formatDatatableDisplayLabel(this.datatableName)}`
       }
     });
     deleteDataTableDialogRef.afterClosed().subscribe((response: any) => {
@@ -332,6 +332,6 @@ export class DatatableMultiRowComponent implements OnInit, OnDestroy, OnChanges 
   }
 
   getInputName(attr: string): string {
-    return this.datatables.getName(attr);
+    return formatDatatableDisplayLabel(this.datatables.getName(attr));
   }
 }
